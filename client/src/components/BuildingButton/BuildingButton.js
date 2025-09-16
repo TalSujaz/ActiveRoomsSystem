@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import './BuildingButton.css';
 
+const getBuildingIcon = () => {
+  // Return building icon based on building name or type
+  if (!building || !building.name) return '🏢';
+
+  const name = building.name.toLowerCase();
+
+  if (name.includes('Lab') || name.includes('lab')) return '🔬';
+  if (name.includes('Library') || name.includes('library')) return '📚';
+  if (name.includes('Hall') || name.includes('hall')) return '🎭';
+  if (name.includes('Food') || name.includes('food') || name.includes('קפטריה')) return '🍽️';
+  if (name.includes('Sport') || name.includes('sport') || name.includes('כושר')) return '🏃‍♂️';
+  if (name.includes('Office') || name.includes('office')) return '🏢';
+  if (name.includes('Classroom') || name.includes('class')) return '🎓';
+  if (name.includes('Parking') || name.includes('parking')) return '🚗';
+
+  // Default building icon
+  return '🏢';
+};
+
 const BuildingButton = ({ building, status, onClick, position }) => {
   const [isHovered, setIsHovered] = useState(false);
 

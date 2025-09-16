@@ -2,35 +2,52 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 
 class ApiService {
   static async makeRequest(url, options = {}) {
-  try {
-    const isFormData = options.body instanceof FormData;
-
-    const config = {
-      headers: {
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...options.headers,
-      },
-      ...options,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${url}`, config);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    // Try parsing JSON, but return raw text if not JSON
-    const text = await response.text();
     try {
-      return JSON.parse(text);
-    } catch {
-      return text;
+      const isFormData = options.body instanceof FormData;
+
+      const config = {
+        headers: {
+          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+          ...options.headers,
+        },
+        ...options,
+      };
+
+      console.log('Making API request to:', `${API_BASE_URL}${url}`);
+      console.log('Request config:', config);
+
+      const response = await fetch(`${API_BASE_URL}${url}`, config);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        let errorMessage;
+
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorText;
+        } catch {
+          errorMessage = errorText || `HTTP error! status: ${response.status}`;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      // Try parsing JSON, but return raw text if not JSON
+      const text = await response.text();
+      try {
+        const jsonResponse = JSON.parse(text);
+        console.log('API Response:', jsonResponse);
+        return jsonResponse;
+      } catch {
+        console.log('API Response (text):', text);
+        return text;
+      }
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
     }
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
   }
-}
 
   static async getAllAreas() {
     return this.makeRequest('/areas');
@@ -42,8 +59,8 @@ class ApiService {
 
   static async getFloorsByBuildingId(buildingId) {
     const allAreas = await this.getAllAreas();
-    return allAreas.filter(area => 
-      area.area_type === 'floor' && area.inside_of === buildingId
+    return allAreas.filter(area =>
+        area.area_type === 'floor' && area.inside_of === buildingId
     );
   }
 
@@ -51,58 +68,58 @@ class ApiService {
     try {
       const allAreas = await this.getAllAreas();
       const buildings = allAreas.filter(area => area.area_type === 'building');
-      
+
       const transformedBuildings = await Promise.all(
-        buildings.map(async (building) => {
-          try {
-            const floors = await this.getFloorsByBuildingId(building.id);
-            
-            return {
-              id: building.id,
-              name: building.name,
-              description: building.description,
-              imageUrl: building.image_path,
-              floors: await Promise.all(
-                floors.map(async (floor) => {
-                  try {
-                    const floorSensors = await this.getSensorsByAreaId(floor.id);
-                    return {
-                      id: floor.id,
-                      name: floor.name,
-                      floorImageUrl: floor.image_path,
-                      sensors: floorSensors.map(sensor => ({
-                        id: sensor.id,
-                        name: sensor.name,
-                        x: sensor.coordinates?.x || 50,
-                        y: sensor.coordinates?.y || 50,
-                        occupied: sensor.status === 'active',
-                        count: sensor.coordinates?.count || 0,
-                        maxCapacity: sensor.coordinates?.maxCapacity || 30
-                      }))
-                    };
-                  } catch (error) {
-                    return {
-                      id: floor.id,
-                      name: floor.name,
-                      floorImageUrl: floor.image_path,
-                      sensors: []
-                    };
-                  }
-                })
-              )
-            };
-          } catch (error) {
-            return {
-              id: building.id,
-              name: building.name,
-              description: building.description,
-              imageUrl: building.image_path,
-              floors: []
-            };
-          }
-        })
+          buildings.map(async (building) => {
+            try {
+              const floors = await this.getFloorsByBuildingId(building.id);
+
+              return {
+                id: building.id,
+                name: building.name,
+                description: building.description,
+                imageUrl: building.image_path,
+                floors: await Promise.all(
+                    floors.map(async (floor) => {
+                      try {
+                        const floorSensors = await this.getSensorsByAreaId(floor.id);
+                        return {
+                          id: floor.id,
+                          name: floor.name,
+                          floorImageUrl: floor.image_path,
+                          sensors: floorSensors.map(sensor => ({
+                            id: sensor.id,
+                            name: sensor.name,
+                            x: sensor.coordinates?.x || 50,
+                            y: sensor.coordinates?.y || 50,
+                            occupied: sensor.status === 'active',
+                            count: sensor.coordinates?.count || 0,
+                            maxCapacity: sensor.coordinates?.maxCapacity || 30
+                          }))
+                        };
+                      } catch (error) {
+                        return {
+                          id: floor.id,
+                          name: floor.name,
+                          floorImageUrl: floor.image_path,
+                          sensors: []
+                        };
+                      }
+                    })
+                )
+              };
+            } catch (error) {
+              return {
+                id: building.id,
+                name: building.name,
+                description: building.description,
+                imageUrl: building.image_path,
+                floors: []
+              };
+            }
+          })
       );
-      
+
       return transformedBuildings;
     } catch (error) {
       console.error('Error in getAllBuildings:', error);
@@ -111,11 +128,11 @@ class ApiService {
   }
 
   static async createArea(areaData) {
-  return this.makeRequest('/areas', {
-    method: 'POST',
-    body: JSON.stringify(areaData),
-  });
-}
+    return this.makeRequest('/areas', {
+      method: 'POST',
+      body: JSON.stringify(areaData),
+    });
+  }
 
   static async updateArea(id, areaData) {
     return this.makeRequest(`/areas/${id}`, {
@@ -125,38 +142,38 @@ class ApiService {
   }
 
   static async updateAreaWithImage(id, areaData, imageFile) {
-  const formData = new FormData();
+    const formData = new FormData();
 
-  // Add text fields to FormData
-  Object.keys(areaData).forEach(key => {
-    if (areaData[key] !== null && areaData[key] !== undefined) {
-      formData.append(key, areaData[key]);
-    }
-  });
-
-  // Add image file if provided
-  if (imageFile) {
-    formData.append('image', imageFile);
-  }
-
-  // Make the request with fetch (skip JSON headers for FormData)
-  try {
-    const response = await fetch(`${API_BASE_URL}/areas/${id}`, {
-      method: 'PUT',
-      body: formData,
-      // Do not set Content-Type; browser will set correct boundary
+    // Add text fields to FormData
+    Object.keys(areaData).forEach(key => {
+      if (areaData[key] !== null && areaData[key] !== undefined) {
+        formData.append(key, areaData[key]);
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Add image file if provided
+    if (imageFile) {
+      formData.append('image', imageFile);
     }
 
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to update area with image:', error);
-    throw error;
+    // Make the request with fetch (skip JSON headers for FormData)
+    try {
+      const response = await fetch(`${API_BASE_URL}/areas/${id}`, {
+        method: 'PUT',
+        body: formData,
+        // Do not set Content-Type; browser will set correct boundary
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to update area with image:', error);
+      throw error;
+    }
   }
-}
 
   static async deleteArea(id) {
     return this.makeRequest(`/areas/${id}`, {
@@ -164,41 +181,41 @@ class ApiService {
     });
   }
 
-static async createAreaWithImage(areaData, imageFile) {
-  const formData = new FormData();
+  static async createAreaWithImage(areaData, imageFile) {
+    const formData = new FormData();
 
-  // Add text fields to FormData
-  Object.keys(areaData).forEach(key => {
-    if (areaData[key] !== null && areaData[key] !== undefined) {
-      formData.append(key, areaData[key]);
-    }
-  });
-
-  // Add image file if provided
-  if (imageFile) {
-    formData.append('image', imageFile);
-  }
-
-  // Make the request directly with fetch instead of makeRequest
-  // so we can skip JSON headers
-  try {
-    const response = await fetch(`${API_BASE_URL}/areas`, {
-      method: 'POST',
-      body: formData,
-      // DO NOT set Content-Type here
+    // Add text fields to FormData
+    Object.keys(areaData).forEach(key => {
+      if (areaData[key] !== null && areaData[key] !== undefined) {
+        formData.append(key, areaData[key]);
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Add image file if provided
+    if (imageFile) {
+      formData.append('image', imageFile);
     }
 
-    return await response.json();
-  } catch (error) {
-    console.error('Failed to create area with image:', error);
-    throw error;
+    // Make the request directly with fetch instead of makeRequest
+    // so we can skip JSON headers
+    try {
+      const response = await fetch(`${API_BASE_URL}/areas`, {
+        method: 'POST',
+        body: formData,
+        // DO NOT set Content-Type here
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create area with image:', error);
+      throw error;
+    }
   }
-}
-  
+
   static async getAllSensors() {
     return this.makeRequest('/sensors');
   }
@@ -215,19 +232,19 @@ static async createAreaWithImage(areaData, imageFile) {
   static async getSensorsByBuildingId(buildingId) {
     const floors = await this.getFloorsByBuildingId(buildingId);
     const allSensors = [];
-    
+
     for (const floor of floors) {
       const floorSensors = await this.getSensorsByAreaId(floor.id);
       allSensors.push(...floorSensors);
     }
-    
+
     return allSensors;
   }
 
   static async getAllSensorsStatus() {
     const sensors = await this.getAllSensors();
     const statusMap = {};
-    
+
     sensors.forEach(sensor => {
       statusMap[sensor.id] = {
         id: sensor.id,
@@ -238,7 +255,7 @@ static async createAreaWithImage(areaData, imageFile) {
         coordinates: sensor.coordinates
       };
     });
-    
+
     return statusMap;
   }
 
@@ -256,36 +273,14 @@ static async createAreaWithImage(areaData, imageFile) {
     });
   }
 
-  static async updateSensorCoordinates(id, coordinates) {
-    const sensor = await this.getSensorById(id);
-    const updatedCoordinates = {
-      ...sensor.coordinates,
-      ...coordinates
-    };
-    
-    return this.updateSensor(id, {
-      ...sensor,
-      coordinates: updatedCoordinates
-    });
-  }
-
   static async deleteSensor(id) {
     return this.makeRequest(`/sensors/${id}`, {
       method: 'DELETE',
     });
   }
 
-  
   static async getAllUsers() {
     return this.makeRequest('/users');
-  }
-
-  static async getUserById(id) {
-    return this.makeRequest(`/users/${id}`);
-  }
-
-  static async login(username, passwordHash) {
-    return this.makeRequest(`/users/${username},${passwordHash}`);
   }
 
   static async createUser(userData) {
@@ -307,6 +302,7 @@ static async createAreaWithImage(areaData, imageFile) {
       method: 'DELETE',
     });
   }
+
   static async healthCheck() {
     try {
       const response = await fetch(`${API_BASE_URL}/health`);
@@ -318,6 +314,41 @@ static async createAreaWithImage(areaData, imageFile) {
 
   static async getServerInfo() {
     return this.makeRequest('/info');
+  }
+
+  // Auth methods
+  static async login(username, password) {
+    return this.makeRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  }
+
+  static async getUserById(userId) {
+    return this.makeRequest(`/auth/user/${userId}`);
+  }
+
+  // Sensor Management methods
+  static async getAllSensorsWithAreas() {
+    return this.makeRequest('/management/sensors-with-areas');
+  }
+
+  static async updateSensorStatus(sensorId, status) {
+    return this.makeRequest(`/management/sensor/${sensorId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
+
+  static async updateSensorCoordinates(sensorId, coordinates) {
+    return this.makeRequest(`/management/sensor/${sensorId}/coordinates`, {
+      method: 'PUT',
+      body: JSON.stringify({ coordinates }),
+    });
+  }
+
+  static async getSensorStatistics() {
+    return this.makeRequest('/management/statistics');
   }
 }
 
