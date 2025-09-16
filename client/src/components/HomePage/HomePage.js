@@ -8,6 +8,10 @@ const HomePage = () => {
 
   const menuItems = [
     {
+      title: 'Sign In',
+      action: () => navigate('/login')
+    },
+    {
       title: 'Help',
       action: () => navigate('help')
     },
@@ -15,7 +19,7 @@ const HomePage = () => {
       title: 'Staff',
       action: () => navigate('/staff')
     },
-    
+
     {
       title: 'Contact',
       action: () => navigate('/contact')
@@ -25,15 +29,11 @@ const HomePage = () => {
       action: () => navigate('/settings')
     },
     {
-      title: 'Admin',
-      action: () => navigate('/adminpanel')
-    },
-    {
       title: 'Campus View ',
       action: () => navigate('/campus')
     },
-    
-   
+
+
   ];
 
   const handleMenuClick = (item, index) => {
@@ -48,14 +48,7 @@ const HomePage = () => {
       {/* Header */}
       <header className="home-header">
         <div className="header-container">
-            <div className="header-actions">
-            <button className="user-profile">
-              <span className="profile-icon"></span>
-              <span>Login</span>
-            </button>
-          </div>
-         
-          
+
           <nav className="main-navigation">
             {menuItems.map((item, index) => (
               <button
@@ -67,21 +60,21 @@ const HomePage = () => {
               >
                 <span className="nav-icon">{item.icon}</span>
                 <span className="nav-title">{item.title}</span>
-                
+
               </button>
             ))}
           </nav>
             <div className="logo-section">
             <div className="logo">
             <span className="logo-text">SMART CAMPUS</span>
-            <img 
-              src="/assets/images/hit-logo.webp" 
-              alt="HIT Logo" 
+            <img
+              src="/assets/images/hit-logo.webp"
+              alt="HIT Logo"
               className="logo-hit"
             />
           </div>
           </div>
-        
+
         </div>
       </header>
 
@@ -89,9 +82,9 @@ const HomePage = () => {
       <main className="hero-section">
         <div className="hero-background">
           <div className="background-overlay"></div>
-          <img 
-            src="/assets/images/hit-campus.jpg" 
-            alt="HIT Campus" 
+          <img
+            src="/assets/images/hit-campus.jpg"
+            alt="HIT Campus"
             className="hero-image"
             onError={(e) => {
               e.target.style.display = 'none';
@@ -105,26 +98,19 @@ const HomePage = () => {
             <h1 className="hero-title">
               Active Rooms Detection
             </h1>
-            
+
             <p className="hero-description">
-              The Smart Campus system is designed to monitor room activity in real time. 
-              By using sensors to detect light and movement, the system identifies which rooms are active or inactive. 
-              This information is displayed on a digital campus map, making it easy for students, staff, and administrators to see the current status of different rooms. 
+              The Smart Campus system is designed to monitor room activity in real time.
+              By using sensors to detect light and movement, the system identifies which rooms are active or inactive.
+              This information is displayed on a digital campus map, making it easy for students, staff, and administrators to see the current status of different rooms.
               The main goal is to optimize resource usage, improve energy efficiency, and create a more comfortable and convenient environment on campus.
             </p>
-            <div className="hero-actions">
-              <button 
-                className="primary-action"
-                onClick={() => navigate('/campus')}
-              >
-              Get Started
-              </button>
-            </div>
+
           </div>
-             
+
         </div>
 
-        
+
       </main>
 
     </div>

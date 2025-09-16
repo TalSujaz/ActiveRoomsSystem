@@ -722,3 +722,61 @@
   position: absolute;   /* take button out of center flow */
   right: 12px;          /* stick to right edge */
 }
+
+/* הוסיפי את הקוד הזה בסוף הקובץ CampusMapView.css */
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: white;
+  font-size: 0.9rem;
+  margin-left: 1rem;
+}
+
+.user-info span:first-child {
+  font-weight: 600;
+}
+
+.user-role-badge {
+  background: rgba(76, 175, 80, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  border: 1px solid rgba(76, 175, 80, 0.5);
+}
+
+.user-profile.logout {
+  background: rgba(244, 67, 54, 0.2) !important;
+  color: #ff6b6b !important;
+  border: 1px solid rgba(244, 67, 54, 0.4) !important;
+}
+
+.user-profile.logout:hover {
+  background: rgba(244, 67, 54, 0.3) !important;
+}
+
+/* Responsive updates for user info */
+@media (max-width: 768px) {
+  .user-info {
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .header-actions {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-info span:first-child {
+    display: none;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
