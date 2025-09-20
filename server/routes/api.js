@@ -12,4 +12,10 @@ router.use('/users', usersRoutes);
 
 router.use('/assets', express.static('public/assets'));
 
+const authRoutes = require('./auth.routes');
+router.use('/auth', authRoutes);
+
+const sensorManagementRoutes = require('./sensorManagement.routes');
+router.use('/management', sensorManagementRoutes);
+
 module.exports = router;

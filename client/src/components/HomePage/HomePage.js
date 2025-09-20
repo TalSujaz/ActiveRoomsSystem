@@ -49,7 +49,7 @@ const HomePage = () => {
       <header className="home-header">
         <div className="header-container">
             <div className="header-actions">
-            <button className="user-profile">
+            <button className="user-profile" onClick={() => navigate('/login')}  >
               <span className="profile-icon"></span>
               <span>Login</span>
             </button>
