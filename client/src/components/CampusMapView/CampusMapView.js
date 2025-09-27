@@ -4,6 +4,7 @@ import ApiService from '../../services/ApiService';
 import './CampusMapView.css';
 import EditArea from '../EditArea/EditArea';
 import DeleteArea from '../DeleteArea/DeleteArea';
+import ImageWithFallback from '../ImageWithFallback/ImageWithFallback';
 
 const CampusMapView = () => {
   const [buildings, setBuildings] = useState([]);
@@ -340,14 +341,12 @@ const handleEditFloorClick = (AreaId, ParentId) => {
                   onClick={() => handleBuildingClick(building)}
                 >
                   <div className="building-image">
-                    <img 
-                      src={building.imageUrl} 
-                      alt={building.name}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
+                    <ImageWithFallback
+  src={building.imageUrl}
+  alt={building.name}
+  className="building-image"
+  onErrorFallback={() => console.error("❌ Failed to load building image:", building.imageUrl)}
+/>
                     <div className="image-placeholder" style={{display: 'none'}}>
                       <span> building picture</span>
                     </div>
@@ -412,15 +411,12 @@ const handleEditFloorClick = (AreaId, ParentId) => {
               {selectedFloor ? (
                 <div className="floor-map-container">
                   <div className="floor-map">
-                    <img 
-                      src={selectedFloor.floorImageUrl} 
-                      alt={`${selectedFloor.name} של ${selectedBuilding.name}`}
-                      className="floor-image"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
-                      }}
-                    />
+                    <ImageWithFallback
+  src={selectedFloor.floorImageUrl}
+  alt={`${selectedFloor.name} של ${selectedBuilding.name}`}
+  className="floor-image"
+  onErrorFallback={() => console.error("❌ Failed to load floor image:", selectedFloor.floorImageUrl)}
+/>
                     <div className="floor-image-placeholder" style={{display: 'none'}}>
                       <span> floor picture</span>
                     </div>
