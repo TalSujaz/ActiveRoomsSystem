@@ -18,8 +18,22 @@ const ImageUpload = ({
 
   // Update uploadedImage when initialImage prop changes
   React.useEffect(() => {
-    setUploadedImage(initialImage);
-  }, [initialImage]);
+    console.log('ImageUpload received initialImage:', initialImage); // Debug log
+    if (initialImage && initialImage.url) {
+      // For existing images from database, ensure we have proper image data
+      const imageData = {
+        ...initialImage,
+        size: initialImage.size || 0,
+        name: initialImage.name || 'Existing image',
+        isExisting: true
+      };
+      console.log('ImageUpload setting image data:', imageData); // Debug log
+      setUploadedImage(imageData);
+    } else if (initialImage === null) {
+      setUploadedImage(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialImage]); // Only depend on initialImage, not uploadedImage
 
   const validateFile = (file) => {
     if (!file) return false;
@@ -189,8 +203,44 @@ const ImageUpload = ({
           <div className="image-wrapper">
             <img
               src={uploadedImage.url}
-              alt={uploadedImage.name}
+              alt={uploadedImage.name || 'Uploaded image'}
               className="preview-image"
+              onError={(e) => {
+                console.error('❌ Image URL failed:', e.target.src);
+                
+                const currentSrc = e.target.src;
+                
+                // Try fallback URL (React frontend - port 3000)
+                if (uploadedImage.fallbackUrl && currentSrc !== uploadedImage.fallbackUrl) {
+                  console.log('🔄 Trying fallback URL (port 3000):', uploadedImage.fallbackUrl);
+                  e.target.src = uploadedImage.fallbackUrl;
+                }
+                // Try explicit frontend URL if different
+                else if (uploadedImage.frontendUrl && currentSrc !== uploadedImage.frontendUrl && uploadedImage.frontendUrl !== uploadedImage.fallbackUrl) {
+                  console.log('🔄 Trying explicit frontend URL:', uploadedImage.frontendUrl);
+                  e.target.src = uploadedImage.frontendUrl;
+                }
+                // Try explicit backend URL if we haven't tried it yet
+                else if (uploadedImage.backendUrl && currentSrc !== uploadedImage.backendUrl) {
+                  console.log('🔄 Trying explicit backend URL:', uploadedImage.backendUrl);
+                  e.target.src = uploadedImage.backendUrl;
+                }
+                else {
+                  console.error('💥 All URLs failed:', {
+                    primary: uploadedImage.url,
+                    fallback: uploadedImage.fallbackUrl,
+                    frontend: uploadedImage.frontendUrl,
+                    backend: uploadedImage.backendUrl,
+                    original: uploadedImage.originalPath
+                  });
+                  setError('Failed to load image. The image may have been moved or deleted.');
+                  e.target.style.display = 'none';
+                }
+              }}
+              onLoad={(e) => {
+  console.log('✅ Image loaded successfully from:', e.target.src);
+  setError(''); // Clear any previous errors
+}}
             />
           </div>
           
@@ -206,8 +256,20 @@ const ImageUpload = ({
             <div className="image-details">
               <Image size={16} className="info-icon" />
               <span className="image-name">
-                {uploadedImage.name}
+                {uploadedImage.name || 'Image'}
               </span>
+              {uploadedImage.isExisting && (
+                <span className="existing-badge" style={{ 
+                  background: '#e3f2fd', 
+                  color: '#1976d2', 
+                  padding: '2px 8px', 
+                  borderRadius: '12px', 
+                  fontSize: '12px',
+                  marginLeft: '8px'
+                }}>
+                  Current
+                </span>
+              )}
             </div>
             <div className="size-info">
               <p className="image-size">

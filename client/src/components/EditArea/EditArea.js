@@ -74,34 +74,60 @@ const EditArea = ({
           setBuildingName(areaData.name || '');
           setDescription(areaData.description || '');
           
-          // Handle existing image
+          // Handle existing image with multiple fallback strategies
           if (areaData.image_path) {
-            console.log('Found existing image path:', areaData.image_path); // Debug log
+            console.log('🔍 Found existing image path:', areaData.image_path);
             
-            // Fix the image URL - prepend API base URL if it's a relative path
-            let imageUrl = areaData.image_path;
-            if (imageUrl.startsWith('/assets') || imageUrl.startsWith('assets')) {
-              // Your backend is on port 3001 and serves static files from public folder
-              const API_BASE = 'http://localhost:3001';
-              imageUrl = imageUrl.startsWith('/') ? `${API_BASE}${imageUrl}` : `${API_BASE}/${imageUrl}`;
+            const BACKEND_BASE = 'http://localhost:3001';  // Backend server
+            const FRONTEND_BASE = 'http://localhost:3000'; // React frontend
+            
+            // Support multiple image serving methods
+            let backendUrl = areaData.image_path;
+            let frontendUrl = areaData.image_path;
+            
+            // Construct backend URL (port 3001)
+            if (backendUrl.startsWith('http://') || backendUrl.startsWith('https://')) {
+              console.log('📍 Using full URL as-is for backend');
+              // Already a complete URL, no changes needed
+            } else if (backendUrl.startsWith('/')) {
+              backendUrl = `${BACKEND_BASE}${backendUrl}`;
+              console.log('🔗 Constructed backend URL:', backendUrl);
+            } else {
+              backendUrl = `${BACKEND_BASE}/${backendUrl}`;
+              console.log('🔗 Constructed relative backend URL:', backendUrl);
             }
             
-            console.log('Original image path:', areaData.image_path);
-            console.log('Final constructed URL:', imageUrl);
+            // Construct frontend URL (port 3000) 
+            if (frontendUrl.startsWith('http://') || frontendUrl.startsWith('https://')) {
+              console.log('📍 Using full URL as-is for frontend');
+              // Already a complete URL, no changes needed
+            } else if (frontendUrl.startsWith('/')) {
+              frontendUrl = `${FRONTEND_BASE}${frontendUrl}`;
+              console.log('🔗 Constructed frontend URL:', frontendUrl);
+            } else {
+              frontendUrl = `${FRONTEND_BASE}/${frontendUrl}`;
+              console.log('🔗 Constructed relative frontend URL:', frontendUrl);
+            }
             
-            // Create image data object that matches what ImageUpload expects
+            console.log('🌐 Backend URL (3001):', backendUrl);
+            console.log('🌐 Frontend URL (3000):', frontendUrl);
+            
+            // Create comprehensive image data object with both URLs
             const existingImageData = {
-              url: imageUrl,
+              url: backendUrl, // Primary URL (try backend first)
+              fallbackUrl: frontendUrl, // Frontend serving fallback (React port 3000)
+              backendUrl: backendUrl, // Explicit backend URL
+              frontendUrl: frontendUrl, // Explicit frontend URL 
+              originalPath: areaData.image_path, // Original path from database
               name: areaData.name ? `${areaData.name}-image` : 'existing-image',
-              size: 0, // We don't know the actual file size from URL
-              isExisting: true // Flag to indicate this is an existing image
+              size: 0,
+              isExisting: true
             };
             
-            console.log('Setting existing image data:', existingImageData); // Debug log
-            console.log('Final image URL will be:', imageUrl); // Debug log
+            console.log('📦 Setting existing image data:', existingImageData);
             setUploadedImage(existingImageData);
           } else {
-            console.log('No existing image found'); // Debug log
+            console.log('❌ No existing image found');
             setUploadedImage(null);
           }
         } catch (err) {
@@ -174,8 +200,8 @@ const EditArea = ({
           // User uploaded a new image file
           await ApiService.updateAreaWithImage(areaId, areaData, uploadedImage.file);
         } else if (uploadedImage?.url && uploadedImage.isExisting) {
-          // Keep existing image
-          areaData.image_path = uploadedImage.url;
+          // Keep existing image - use original path for consistency
+          areaData.image_path = uploadedImage.originalPath || uploadedImage.url;
           await ApiService.updateArea(areaId, areaData);
         } else if (uploadedImage === null) {
           // User removed the image
@@ -191,7 +217,7 @@ const EditArea = ({
         if (uploadedImage?.file) {
           await ApiService.createAreaWithImage(areaData, uploadedImage.file);
         } else {
-          areaData.image_path = uploadedImage?.url || null; 
+          areaData.image_path = uploadedImage?.originalPath || uploadedImage?.url || null; 
           await ApiService.createArea(areaData);
         }
         alert(`${areaType === "floor" ? "Floor" : "Building"} created successfully!`);
