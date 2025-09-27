@@ -212,7 +212,7 @@ const handleEditFloorClick = (AreaId, ParentId) => {
   setShowEditArea(true);
 };
 
-  if (error) {
+   if (error) {
     return (
       <div className="campus-map-view">
         <div className="error-container">
@@ -364,11 +364,11 @@ const handleEditFloorClick = (AreaId, ParentId) => {
                     </div> 
                     <div className="building-actions">
                       <button className="add-delete-btn" onClick={(e) => {
-        e.stopPropagation(); // Prevent parent click
+        e.stopPropagation(); 
         handleDeleteBuildingClick(building);
       }}>Delete</button>
       <button className="add-edit-btn" onClick={(e) => {
-        e.stopPropagation(); // Prevent parent click
+        e.stopPropagation();
         handleEditBuildingClick(building.id);
       }}>Edit</button>
                     </div>                                                           
@@ -390,98 +390,98 @@ const handleEditFloorClick = (AreaId, ParentId) => {
               </div>
             </div>
 
-            {/* Floor Selection */}
-            {selectedBuilding.floors && selectedBuilding.floors.length > 0 ? (
-              <>
-                <div className="floor-tabs">
-                  {selectedBuilding.floors.map((floor) => (
-                    <button
-                      key={floor.id}
-                      className={`floor-tab ${selectedFloor?.id === floor.id ? 'active' : ''}`}
-                      onClick={() => handleFloorSelect(floor)}
-                    >
-                      {floor.name}
-                    </button>
-                  ))}
-                 
-                  <button className="floor-tab" onClick={() => handleAddFloorClick(selectedBuilding.id)}>
-                    Add floor
-                  </button>                             
-                </div>
+            {/* Floor Selection - Always show */}
+            <>
+              <div className="floor-tabs">
+                {selectedBuilding.floors && selectedBuilding.floors.map((floor) => (
+                  <button
+                    key={floor.id}
+                    className={`floor-tab ${selectedFloor?.id === floor.id ? 'active' : ''}`}
+                    onClick={() => handleFloorSelect(floor)}
+                  >
+                    {floor.name}
+                  </button>
+                ))}
+               
+                <button className="floor-tab" onClick={() => handleAddFloorClick(selectedBuilding.id)}>
+                  Add floor
+                </button>                             
+              </div>
 
-                {/* Floor Map */}
-                {selectedFloor && (
-                  <div className="floor-map-container">
-                    <div className="floor-map">
-                      <img 
-                        src={selectedFloor.floorImageUrl} 
-                        alt={`${selectedFloor.name} של ${selectedBuilding.name}`}
-                        className="floor-image"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                      <div className="floor-image-placeholder" style={{display: 'none'}}>
-                        <span> floor picture</span>
-                      </div>
-                      
-                      {/* Sensors Overlay */}
-                      <div className="sensors-overlay">
-                        {selectedFloor.sensors && selectedFloor.sensors.map((sensor) => (
-                          <button
-                            key={sensor.id}
-                            className={`sensor-button ${sensor.occupied ? 'occupied' : 'empty'}`}
-                            style={{ left: `${sensor.x}%`, top: `${sensor.y}%` }}
-                            onClick={() => handleSensorClick(sensor)}
-                          >
-                            <div className="sensor-count">{sensor.count}</div>
-                            <div className="sensor-tooltip">
-                              <div className="tooltip-content">
-                                <strong>{sensor.name}</strong>
-                                <div>status: {sensor.occupied ? 'active' : 'inactive '}</div>
-                                <div>people: {sensor.count}/{sensor.maxCapacity}</div>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+              {/* Floor Map */}
+              {selectedFloor ? (
+                <div className="floor-map-container">
+                  <div className="floor-map">
+                    <img 
+                      src={selectedFloor.floorImageUrl} 
+                      alt={`${selectedFloor.name} של ${selectedBuilding.name}`}
+                      className="floor-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div className="floor-image-placeholder" style={{display: 'none'}}>
+                      <span> floor picture</span>
                     </div>
-
-                    {/* Floor Statistics */}
-                    <div className="floor-stats">
-                      <div className="stat-card">
-                        <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.length : 0}</span>
-                        <span className="stat-label">rooms</span>
-                      </div>
-                      <div className="stat-card">
-                        <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.filter(s => s.occupied).length : 0}</span>
-                        <span className="stat-label">active</span>
-                      </div>
-                      <div className="stat-card">
-                        <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.reduce((total, s) => total + (s.count || 0), 0) : 0}</span>
-                        <span className="stat-label">total </span>
-                      </div>
-                      <div className="floor-actions">
-                      <button className="add-delete-btn" onClick={(e) => {handleDeleteFloorClick(selectedFloor.id, selectedBuilding.id);}}>Delete</button>
-      <button className="add-edit-btn" onClick={(e) => {handleEditFloorClick(selectedFloor.id, selectedBuilding.id);}}>Edit</button>
-                    </div> 
+                    
+                    {/* Sensors Overlay */}
+                    <div className="sensors-overlay">
+                      {selectedFloor.sensors && selectedFloor.sensors.map((sensor) => (
+                        <button
+                          key={sensor.id}
+                          className={`sensor-button ${sensor.occupied ? 'occupied' : 'empty'}`}
+                          style={{ left: `${sensor.x}%`, top: `${sensor.y}%` }}
+                          onClick={() => handleSensorClick(sensor)}
+                        >
+                          <div className="sensor-count">{sensor.count}</div>
+                          <div className="sensor-tooltip">
+                            <div className="tooltip-content">
+                              <strong>{sensor.name}</strong>
+                              <div>status: {sensor.occupied ? 'active' : 'inactive '}</div>
+                              <div>people: {sensor.count}/{sensor.maxCapacity}</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
-              </>
-            ) : (
-             <div className="section-header">
-                      <h2>No floors found for this building</h2>
-                      <p>Please contact the administrator to add floors.</p>
+
+                  {/* Floor Statistics */}
+                  <div className="floor-stats">
+                    <div className="stat-card">
+                      <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.length : 0}</span>
+                      <span className="stat-label">rooms</span>
                     </div>
-            )}
+                    <div className="stat-card">
+                      <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.filter(s => s.occupied).length : 0}</span>
+                      <span className="stat-label">active</span>
+                    </div>
+                    <div className="stat-card">
+                      <span className="stat-number">{selectedFloor.sensors ? selectedFloor.sensors.reduce((total, s) => total + (s.count || 0), 0) : 0}</span>
+                      <span className="stat-label">total </span>
+                    </div>
+                    <div className="floor-actions">
+                    <button className="add-delete-btn" onClick={(e) => {handleDeleteFloorClick(selectedFloor.id, selectedBuilding.id);}}>Delete</button>
+    <button className="add-edit-btn" onClick={(e) => {handleEditFloorClick(selectedFloor.id, selectedBuilding.id);}}>Edit</button>
+                  </div> 
+                  </div>
+                </div>
+              ) : (
+                <div className="floor-map-container">
+                  <div className="floor-map">
+                    <div className="floor-image-placeholder" style={{display: 'flex'}}>
+                      <span>Select a floor or add new floor</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
           </div>
         )}
       </div>
     </div>
   );
 };
-
 
 export default CampusMapView;
