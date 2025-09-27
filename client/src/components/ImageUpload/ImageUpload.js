@@ -1,22 +1,25 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Image, X, AlertCircle } from 'lucide-react';
-import './ImageUpload.css'; // You'll need to create this CSS file
+import './ImageUpload.css';
 
 const ImageUpload = ({ 
   onImageUpload, 
   maxSizeInMB = 5, 
-  acceptedFormats = ['image/jpeg', 'image/png'], // Restricted to JPG/PNG only
+  acceptedFormats = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
   className = '',
   placeholder = 'Drag and drop an image here, or click to select',
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.8
+  initialImage = null // New prop for existing image
 }) => {
-  const [uploadedImage, setUploadedImage] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(initialImage);
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState('');
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Update uploadedImage when initialImage prop changes
+  React.useEffect(() => {
+    setUploadedImage(initialImage);
+  }, [initialImage]);
 
   const validateFile = (file) => {
     if (!file) return false;
@@ -27,7 +30,16 @@ const ImageUpload = ({
     }
 
     if (!acceptedFormats.includes(file.type)) {
-      setError(`Only JPG and PNG files are supported`);
+      const formatNames = acceptedFormats.map(format => 
+        format.split('/')[1].toUpperCase()
+      ).join(', ');
+      setError(`Only ${formatNames} files are supported`);
+      return false;
+    }
+
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      setError(`File size must be less than ${maxSizeInMB}MB`);
       return false;
     }
 
@@ -35,124 +47,40 @@ const ImageUpload = ({
     return true;
   };
 
-  const compressImage = (file, targetMaxWidth = maxWidth, targetMaxHeight = maxHeight, targetQuality = quality) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-
-      img.onload = () => {
-        // Calculate new dimensions while maintaining aspect ratio
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > targetMaxWidth) {
-            height = (height * targetMaxWidth) / width;
-            width = targetMaxWidth;
-          }
-        } else {
-          if (height > targetMaxHeight) {
-            width = (width * targetMaxHeight) / height;
-            height = targetMaxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        // Draw and compress
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob(
-          (blob) => {
-            // Create a new File object with the same name and type
-            const compressedFile = new File([blob], file.name, {
-              type: file.type,
-              lastModified: Date.now(),
-            });
-            resolve(compressedFile);
-          },
-          file.type,
-          targetQuality
-        );
-      };
-
-      img.onerror = () => {
-        resolve(file); // If compression fails, return original file
-      };
-
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  const ensureFileSizeLimit = async (file) => {
-    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-    
-    if (file.size <= maxSizeInBytes) {
-      return file; // File is already small enough
-    }
-    
-    // Try different compression levels
-    let currentQuality = quality;
-    let compressedFile = file;
-    let attempts = 0;
-    const maxAttempts = 5;
-    
-    while (compressedFile.size > maxSizeInBytes && attempts < maxAttempts && currentQuality > 0.1) {
-      currentQuality = Math.max(0.1, currentQuality - 0.1);
-      compressedFile = await compressImage(file, maxWidth, maxHeight, currentQuality);
-      attempts++;
-    }
-    
-    return compressedFile;
-  };
-
   const handleFileUpload = async (file) => {
     if (!validateFile(file)) return;
 
-    setIsCompressing(true);
+    setIsUploading(true);
     setError('');
 
     try {
-      console.log('Original file size:', (file.size / 1024 / 1024).toFixed(2), 'MB');
-      
-      // Compress the image
-      const compressedFile = await ensureFileSizeLimit(file);
-      
-      console.log('Compressed file size:', (compressedFile.size / 1024 / 1024).toFixed(2), 'MB');
-      
-      // Check if compression was successful enough
-      const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
-      if (compressedFile.size > maxSizeInBytes) {
-        setError(`Unable to compress image below ${maxSizeInMB}MB. Try a smaller image.`);
-        setIsCompressing(false);
-        return;
-      }
-
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageData = {
-          file: compressedFile, // Use compressed file
+          file: file, // Use original file without compression
           url: e.target.result,
-          name: file.name, // Keep original name
-          size: compressedFile.size, // Show compressed size
-          originalSize: file.size, // Keep track of original size
-          wasCompressed: file.size !== compressedFile.size
+          name: file.name,
+          size: file.size
         };
         
         setUploadedImage(imageData);
-        setIsCompressing(false);
+        setIsUploading(false);
         
         if (onImageUpload) {
           onImageUpload(imageData);
         }
       };
       
-      reader.readAsDataURL(compressedFile);
+      reader.onerror = () => {
+        setError('Failed to read file. Please try again.');
+        setIsUploading(false);
+      };
+      
+      reader.readAsDataURL(file);
     } catch (err) {
-      console.error('Image compression failed:', err);
+      console.error('Image upload failed:', err);
       setError('Failed to process image. Please try a different image.');
-      setIsCompressing(false);
+      setIsUploading(false);
     }
   };
 
@@ -184,7 +112,7 @@ const ImageUpload = ({
   };
 
   const handleClick = () => {
-    if (!isCompressing) {
+    if (!isUploading) {
       fileInputRef.current?.click();
     }
   };
@@ -209,11 +137,21 @@ const ImageUpload = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const getAcceptString = () => {
+    return acceptedFormats.join(',');
+  };
+
+  const getFormatDisplayNames = () => {
+    return acceptedFormats.map(format => 
+      format.split('/')[1].toUpperCase()
+    ).join(', ');
+  };
+
   return (
     <div className={`image-upload-container ${className}`}>
       {!uploadedImage ? (
         <div
-          className={`upload-area ${isDragOver ? 'drag-over' : ''} ${error ? 'error' : ''} ${isCompressing ? 'processing' : ''}`}
+          className={`upload-area ${isDragOver ? 'drag-over' : ''} ${error ? 'error' : ''} ${isUploading ? 'processing' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
@@ -222,26 +160,26 @@ const ImageUpload = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/png"
+            accept={getAcceptString()}
             onChange={handleFileInputChange}
             style={{ display: 'none' }}
-            disabled={isCompressing}
+            disabled={isUploading}
           />
           
           <div className="upload-content">
             <Upload 
-              className={`upload-icon ${isDragOver ? 'drag-over' : ''} ${isCompressing ? 'processing' : ''}`}
+              className={`upload-icon ${isDragOver ? 'drag-over' : ''} ${isUploading ? 'processing' : ''}`}
               size={48}
             />
             <div className="upload-text">
               <p className={`upload-title ${isDragOver ? 'drag-over' : ''}`}>
-                {isCompressing ? 'Compressing image...' : placeholder}
+                {isUploading ? 'Uploading image...' : placeholder}
               </p>
               <p className="upload-subtitle">
-                Maximum file size: {maxSizeInMB}MB (auto-compressed)
+                Maximum file size: {maxSizeInMB}MB
               </p>
               <p className="upload-formats">
-                Supported formats: JPG, PNG
+                Supported formats: {getFormatDisplayNames()}
               </p>
             </div>
           </div>
@@ -259,6 +197,7 @@ const ImageUpload = ({
           <button
             onClick={handleRemoveImage}
             className="remove-button"
+            title="Remove image"
           >
             <X size={16} />
           </button>
@@ -269,19 +208,11 @@ const ImageUpload = ({
               <span className="image-name">
                 {uploadedImage.name}
               </span>
-              {uploadedImage.wasCompressed && (
-                <span className="compression-badge">Compressed</span>
-              )}
             </div>
             <div className="size-info">
               <p className="image-size">
-                {formatFileSize(uploadedImage.size)}
+                {uploadedImage.isExisting ? 'Existing image' : formatFileSize(uploadedImage.size)}
               </p>
-              {uploadedImage.wasCompressed && (
-                <p className="original-size">
-                  Original: {formatFileSize(uploadedImage.originalSize)}
-                </p>
-              )}
             </div>
           </div>
         </div>
